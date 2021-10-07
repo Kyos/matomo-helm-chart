@@ -86,11 +86,15 @@ tags:
   redis: false
 
 redis:
+  # If `true`, the Redis dependency is enabled
+  enabled: true
   password: matomo
   cluster:
     enabled: false
 
 mariadb:
+  # If `true`, the Mariadb dependency is enabled
+  enabled: true
   image:
     debug: true
   architecture: standalone
