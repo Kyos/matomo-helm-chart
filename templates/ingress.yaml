@@ -1,7 +1,11 @@
 {{- if .Values.ingress.enabled -}}
 {{- $fullName := include "matomo.fullname" . -}}
 {{- $svcPort := .Values.service.port -}}
-{{- if eq .Values.ingress.type "default" -}}
+{{- if and .Values.ingress.className (not (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion)) }}
+  {{- if not (hasKey .Values.ingress.annotations "kubernetes.io/ingress.class") }}
+  {{- $_ := set .Values.ingress.annotations "kubernetes.io/ingress.class" .Values.ingress.className}}
+  {{- end }}
+{{- end }}
 {{- if semverCompare ">=1.19-0" .Capabilities.KubeVersion.GitVersion -}}
 apiVersion: networking.k8s.io/v1
 {{- else if semverCompare ">=1.14-0" .Capabilities.KubeVersion.GitVersion -}}
@@ -19,9 +23,12 @@ metadata:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
-  {{- if .Values.ingress.tls.default }}
+  {{- if and .Values.ingress.className (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion) }}
+  ingressClassName: {{ .Values.ingress.className }}
+  {{- end }}
+  {{- if .Values.ingress.tls }}
   tls:
-    {{- range .Values.ingress.tls.default }}
+    {{- range .Values.ingress.tls }}
     - hosts:
         {{- range .hosts }}
         - {{ . | quote }}
@@ -35,39 +42,20 @@ spec:
       http:
         paths:
           {{- range .paths }}
-          - path: {{ . }}
+          - path: {{ .path }}
+            {{- if and .pathType (semverCompare ">=1.18-0" $.Capabilities.KubeVersion.GitVersion) }}
+            pathType: {{ .pathType }}
+            {{- end }}
             backend:
+              {{- if semverCompare ">=1.19-0" $.Capabilities.KubeVersion.GitVersion }}
+              service:
+                name: {{ $fullName }}
+                port:
+                  number: {{ $svcPort }}
+              {{- else }}
               serviceName: {{ $fullName }}
               servicePort: {{ $svcPort }}
+              {{- end }}
           {{- end }}
     {{- end }}
-{{- else if eq .Values.ingress.type "traefik" -}}
-apiVersion: traefik.containo.us/v1alpha1
-kind: IngressRoute
-metadata:
-  name: {{ include "matomo.fullname" . }}
-  namespace: {{ .Release.Namespace }}
-  labels:
-  {{- include "matomo.labels" . | nindent 4 }}
-spec:
-  entryPoints:
-    {{- if .Values.ingress.tls.traefik }}
-    - websecure
-    {{- else }}
-    - web
-    {{- end }}
-  routes:
-    {{- range .Values.ingress.hosts }}
-    {{- $host := .host }}
-    - match: Host(`{{ $host }}`) && ({{ include "matomo.traefik.joinpaths" (dict "paths" .paths) }})
-      kind: Rule
-      services:
-        - name: {{ $fullName }}
-          port: {{ $svcPort }}
-    {{- end }}
-  {{- if .Values.ingress.tls.traefik }}
-  tls:
-    certResolver: {{ .Values.ingress.tls.traefik }}
-  {{- end }}
-{{- end }}
 {{- end }}
