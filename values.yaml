@@ -8,7 +8,7 @@ image:
   repository: bitnami/matomo
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "4.4.0"
+  tag: "4.5.0"
 
 imagePullSecrets: []
 nameOverride: ""
@@ -23,10 +23,69 @@ serviceAccount:
   # If not set and create is true, a name is generated using the fullname template
   name: ""
 
+matomoWebsiteName: ""
+
+#matomoSkipBootstrap: "false"
+
+## External database configuration
+##
+externalDatabase:
+  ## @param externalDatabase.host Host of the existing database
+  ##
+  host: ""
+  ## @param externalDatabase.port Port of the existing database
+  ##
+  port: 3306
+  ## @param externalDatabase.user Existing username in the external db
+  ##
+  user: matomo
+  ## @param externalDatabase.password Password for the above username
+  ##
+  password: ""
+  ## @param externalDatabase.database Name of the existing database
+  ##
+  database: matomo
+
+## Enable persistence using Persistent Volume Claims
+## ref: http://kubernetes.io/docs/user-guide/persistent-volumes/
+##
+persistence:
+  ## @param persistence.enabled Enable persistence using PVC
+  ##
+  enabled: true
+  ## @param persistence.storageClass PVC Storage Class for Matomo volume
+  ## If defined, storageClassName: <storageClass>
+  ## If set to "-", storageClassName: "", which disables dynamic provisioning
+  ## If undefined (the default) or set to null, no storageClassName spec is
+  ##   set, choosing the default provisioner.  (gp2 on AWS, standard on
+  ##   GKE, AWS & OpenStack)
+  ##
+  storageClass: ""
+  ## @param persistence.accessMode PVC Access Mode for Matomo volume
+  ## Requires persistence.enabled: true
+  ## If defined, PVC must be created manually before volume will be bound
+  ##
+  accessMode: ReadWriteOnce
+  ## @param persistence.size PVC Storage Request for Matomo volume
+  ##
+  size: 8Gi
+  ## @param persistence.existingClaim An Existing PVC name for Matomo volume
+  ## Requires persistence.enabled: true
+  ## If defined, PVC must be created manually before volume will be bound
+  ##
+  existingClaim: ""
+  ## @param persistence.hostPath Host mount path for Matomo volume
+  ## Requires persistence.enabled: true
+  ## Requires persistence.existingClaim: nil|false
+  ## Default: nil.
+  ##
+  hostPath: ""
+
 podAnnotations: {}
 
-podSecurityContext: {}
-  # fsGroup: 2000
+podSecurityContext:
+  enabled: true
+  fsGroup: 1001
 
 securityContext: {}
   # capabilities:
@@ -81,19 +140,31 @@ tolerations: []
 
 affinity: {}
 
-tags:
-  redis: false
+# Configuration for secrets that should be created
+secrets: {}
+  # mysecret:
+  #   type: {}
+  #   annotations: {}
+  #   labels: {}
+  #   stringData: {}
+  #   data: {}
+
+# Additional environment variables for Matomo
+extraEnv: {}
+
+# Additional environment variables for Matomo mapped from Secret or ConfigMap
+extraEnvFrom: ""
 
 redis:
   # If `true`, the Redis dependency is enabled
-  enabled: true
+  enabled: false
   password: matomo
   cluster:
     enabled: false
 
 mariadb:
   # If `true`, the Mariadb dependency is enabled
-  enabled: true
+  enabled: false
   image:
     debug: true
   architecture: standalone
@@ -131,11 +202,3 @@ mariadb:
       socket=/opt/bitnami/mariadb/tmp/mysql.sock
       pid-file=/opt/bitnami/mariadb/tmp/mysqld.pid
 
-matomo:
-  host: chart-example.local
-  username: admin
-  password: My$uper$ecretPassword123#
-  email: admin@chart-example.local
-  website_host: https://tracked-website.local
-  website_name: Tracked Website
-  env: {}

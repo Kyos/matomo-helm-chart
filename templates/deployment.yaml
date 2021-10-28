@@ -25,9 +25,11 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       serviceAccountName: {{ include "matomo.serviceAccountName" . }}
-      securityContext:
-        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- if .Values.podSecurityContext.enabled }}
+      securityContext: {{- omit .Values.podSecurityContext "enabled" | toYaml | nindent 8 }}
+      {{- end }}
       initContainers:
+        {{- if .Values.redis.enabled }}
         - args:
             - for i in {30..0}; do redis-cli -h ${MATOMO_CACHE_HOST} -a ${MATOMO_CACHE_PASSWORD} ping &> /dev/null;
               if [[ $? == 0 ]]; then
@@ -46,6 +48,8 @@ spec:
           resources:
             requests:
               memory: 50Mi
+        {{- end }}
+        {{- if .Values.mariadb.enabled }}
         - args:
             - for i in {30..0}; do mysql -h${MATOMO_DATABASE_HOST} -u${MATOMO_DATABASE_USER} -p${MATOMO_DATABASE_PASSWORD} -N -e "SELECT 1" &> /dev/null;
               if [[ $? == 0 ]]; then
@@ -64,6 +68,7 @@ spec:
           resources:
             requests:
               memory: 50Mi
+        {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           securityContext:
@@ -73,22 +78,33 @@ spec:
           envFrom:
             - secretRef:
                 name: {{ template "matomo.fullname" . }}
-          {{- with .Values.matomo.env }}
           env:
+            - name: MATOMO_WEBSITE_NAME
+              value: {{ .Values.matomoWebsiteName | quote }}
+            - name: MATOMO_WEBSITE_HOST
+              value: {{ include "matomo.host" . | quote }}
             - name: MATOMO_SKIP_BOOTSTRAP
-              value: no # TODO: set to yes if bootstrapping succeeded on pvc
-            {{- range $key, $val := . }}
-            - name: {{ $key }}
-              value: {{ $val | quote }}
+              value: {{ default (ternary "no" "yes" .Release.IsInstall) .Values.matomoSkipBootstrap | quote }}
+            - name: MATOMO_DATABASE_HOST
+              value: {{ include "matomo.databaseHost" . | quote }}
+            - name: MATOMO_DATABASE_PORT_NUMBER
+              value: {{ include "matomo.databasePort" . | quote }}
+            - name: MATOMO_DATABASE_NAME
+              value: {{ include "matomo.databaseName" . | quote }}
+            - name: MATOMO_DATABASE_USER
+              value: {{ include "matomo.databaseUser" . | quote }}
+            - name: MATOMO_DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "matomo.databaseSecretName" . }}
+                  key: mariadb-password
+            {{- if .Values.extraEnv }}
+            {{- toYaml .Values.extraEnv | nindent 12 }}
             {{- end }}
-          {{- end }}
           ports:
             - name: http
               containerPort: 8080
               protocol: TCP
-            # - name: https
-            #   containerPort: 8443
-            #   protocol: TCP
           livenessProbe:
             httpGet:
               path: /
@@ -103,6 +119,12 @@ spec:
             initialDelaySeconds: 90
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: matomo-data
+              mountPath: /bitnami/
+            {{- if .Values.extraVolumeMounts }}
+            {{- include "common.tplvalues.render" (dict "value" .Values.extraVolumeMounts "context" $) | nindent 12 }}
+            {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -115,3 +137,14 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      volumes:
+        - name: matomo-data
+          {{- if .Values.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.persistence.existingClaim | default (printf "%s-matomo" (include "common.names.fullname" .)) }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        {{- if .Values.extraVolumes }}
+        {{- include "common.tplvalues.render" (dict "value" .Values.extraVolumes "context" $) | nindent 8 }}
+        {{- end }}
