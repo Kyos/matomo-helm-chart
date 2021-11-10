@@ -1,49 +1,82 @@
-# Matomo Chart
+# Matomo
 
-Matomo is an open source alternative to Google Analytics. (Ported from: https://gitlab.com/ideaplexus/helm/matomo/-/tree/master/)
+![Version: 4.6.0](https://img.shields.io/badge/Version-4.6.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 4.6.0](https://img.shields.io/badge/AppVersion-4.6.0-informational?style=flat-square)
 
-## Install
+A Helm chart for Kubernetes
 
-```sh
-helm install matomo . --namespace matomo --create-namespace
-```
+## Maintainers
 
-## Upgrade
+| Name | Email | Url |
+| ---- | ------ | --- |
+| Tina Burschka | tina@ideaplexus.com | https://www.ideaplexus.com/open-source.html |
 
-```sh
-export REDIS_PASSWORD=$(kubectl get secret --namespace "matomo" matomo-redis -o jsonpath="{.data.redis-password}" | base64 --decode)
+## Requirements
 
-helm upgrade matomo . --namespace matomo --set redis.auth.password=$REDIS_PASSWORD 
-```
+| Repository | Name | Version |
+|------------|------|---------|
+| https://charts.bitnami.com/bitnami | mariadb | 9.2.4 |
 
-## Parameters
+## Values
 
-Most relevant parameters, if you need an advanced configuration, take a look into the `values.yaml`.
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| affinity | object | `{}` |  |
+| autoscaling.enabled | bool | `false` |  |
+| autoscaling.maxReplicas | int | `2` |  |
+| autoscaling.minReplicas | int | `1` |  |
+| autoscaling.targetCPUUtilizationPercentage | int | `75` |  |
+| externalDatabase.database | string | `"matomo"` |  |
+| externalDatabase.host | string | `""` |  |
+| externalDatabase.password | string | `""` |  |
+| externalDatabase.port | int | `3306` |  |
+| externalDatabase.user | string | `"matomo"` |  |
+| extraEnv | object | `{}` |  |
+| extraEnvFrom | string | `""` |  |
+| fullnameOverride | string | `""` |  |
+| image.pullPolicy | string | `"IfNotPresent"` |  |
+| image.repository | string | `"bitnami/matomo"` |  |
+| image.tag | string | `"4.5.0"` |  |
+| imagePullSecrets | list | `[]` |  |
+| ingress.annotations | object | `{}` |  |
+| ingress.className | string | `""` |  |
+| ingress.enabled | bool | `false` |  |
+| ingress.hosts[0].host | string | `"chart-example.local"` |  |
+| ingress.hosts[0].paths[0].path | string | `"/"` |  |
+| ingress.hosts[0].paths[0].pathType | string | `"ImplementationSpecific"` |  |
+| ingress.tls | list | `[]` |  |
+| mariadb.architecture | string | `"standalone"` |  |
+| mariadb.auth.database | string | `"matomo"` |  |
+| mariadb.auth.password | string | `"matomo"` |  |
+| mariadb.auth.rootPassword | string | `"matomo"` |  |
+| mariadb.auth.username | string | `"matomo"` |  |
+| mariadb.enabled | bool | `false` |  |
+| mariadb.image.debug | bool | `true` |  |
+| mariadb.primary.configuration | string | `"[mysqld]\nskip-name-resolve\nexplicit_defaults_for_timestamp\nbasedir=/opt/bitnami/mariadb\nplugin_dir=/opt/bitnami/mariadb/plugin\nport=3306\nsocket=/opt/bitnami/mariadb/tmp/mysql.sock\ntmpdir=/opt/bitnami/mariadb/tmp\nmax_allowed_packet=128M\nbind-address=0.0.0.0\npid-file=/opt/bitnami/mariadb/tmp/mysqld.pid\nlog-error=/opt/bitnami/mariadb/logs/mysqld.log\ncharacter-set-server=UTF8\ncollation-server=utf8_general_ci\n\n[client]\nport=3306\nsocket=/opt/bitnami/mariadb/tmp/mysql.sock\ndefault-character-set=UTF8\nplugin_dir=/opt/bitnami/mariadb/plugin\n\n[manager]\nport=3306\nsocket=/opt/bitnami/mariadb/tmp/mysql.sock\npid-file=/opt/bitnami/mariadb/tmp/mysqld.pid"` |  |
+| matomoWebsiteName | string | `""` |  |
+| nameOverride | string | `""` |  |
+| nodeSelector | object | `{}` |  |
+| persistence.accessMode | string | `"ReadWriteOnce"` |  |
+| persistence.enabled | bool | `true` |  |
+| persistence.existingClaim | string | `""` |  |
+| persistence.hostPath | string | `""` |  |
+| persistence.size | string | `"8Gi"` |  |
+| persistence.storageClass | string | `""` |  |
+| podAnnotations | object | `{}` |  |
+| podSecurityContext.enabled | bool | `true` |  |
+| podSecurityContext.fsGroup | int | `1001` |  |
+| redis.cluster.enabled | bool | `false` |  |
+| redis.enabled | bool | `false` |  |
+| redis.password | string | `"matomo"` |  |
+| replicaCount | int | `1` |  |
+| resources | object | `{}` |  |
+| secrets | object | `{}` |  |
+| securityContext | object | `{}` |  |
+| service.port | int | `80` |  |
+| service.type | string | `"ClusterIP"` |  |
+| serviceAccount.annotations | object | `{}` |  |
+| serviceAccount.create | bool | `true` |  |
+| serviceAccount.name | string | `""` |  |
+| tolerations | list | `[]` |  |
 
-| Parameter                            | Description                                               | Default                                  |
-| :----------------------------------- | :-------------------------------------------------------- | :--------------------------------------- |
-| `replicaCount`                       | How many instances of Matomo should run in parallel       | `1`                                      |
-| `image.tag`                          | Override the version tag for the Matomo docker image      | `""` (Using chart appVersion)            |
-| `ingress.enabled`                    | If `true`, an Ingress is created                          | `false`                                  |
-| `ingress.rules`                      | List of Ingress Ingress rule                              | see below                                |
-| `ingress.rules[0].host`              | Host for the Ingress rule                                 | `{{ .Release.Name }}.matomo.example.com` |
-| `ingress.rules[0].paths`             | Paths for the Ingress rule                                | see below                                |
-| `ingress.rules[0].paths[0].path`     | Path for the Ingress rule                                 | `/`                                      |
-| `ingress.rules[0].paths[0].pathType` | Path Type for the Ingress rule                            | `Prefix`                                 |
-| `ingress.servicePort`                | The Service port targeted by the Ingress                  | `http`                                   |
-| `ingress.annotations`                | Ingress annotations                                       | `{}`                                     |
-| `ingress.ingressClassName`           | The name of the Ingress Class associated with the ingress | `""`                                     |
-| `ingress.labels`                     | Additional Ingress labels                                 | `{}`                                     |
-| `ingress.tls`                        | TLS configuration                                         | see below                                |
-| `ingress.tls[0].hosts`               | List of TLS hosts                                         | `[matomo.example.com]`                   |
-| `ingress.tls[0].secretName`          | Name of the TLS secret                                    | `""`                                     |
-| `matomo.host`                        | Host of the Matomo installation                           | `chart-example.local`                    |
-| `matomo.username`                    | Superusers name                                           | `admin`                                  |
-| `matomo.password`                    | Superusers password                                       | `My$uper$ecretPassword123#`              |
-| `matomo.email`                       | Superusers email address                                  | `admin@chart-example.local`              |
-| `matomo.website_host`                | Host of the tracked website                               | `https://tracked-website.local`          |
-| `matomo.website_name`                | Name of the tracked website                               | `Tracked Website`                        |
-| `matomo.env`                         | Additional Environment variables, e.g. to configure SMTP  | `{}`                                     |
-
-
-
+----------------------------------------------
+Autogenerated from chart metadata using [helm-docs v1.5.0](https://github.com/norwoodj/helm-docs/releases/v1.5.0)

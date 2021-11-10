@@ -1,5 +1,5 @@
 apiVersion: v2
-name: matomo
+name: Matomo
 description: A Helm chart for Kubernetes
 maintainers:
   - name: Tina Burschka
