@@ -42,13 +42,6 @@ When using Ingress, it will be set to the Ingress hostname.
 {{- end -}}
 
 {{/*
-Return  the proper Storage Class
-*/}}
-{{- define "matomo.storageClass" -}}
-{{- include "common.storage.class" (dict "persistence" .Values.persistence "global" .Values.global) -}}
-{{- end -}}
-
-{{/*
 Expand the name of the chart.
 */}}
 {{- define "matomo.name" -}}
@@ -168,6 +161,6 @@ Return the MariaDB Secret Name
 {{- else if .Values.externalDatabase.existingSecret -}}
     {{- printf "%s" .Values.externalDatabase.existingSecret -}}
 {{- else -}}
-    {{- printf "%s-%s" (include "common.names.fullname" .) "externaldb" -}}
+    {{- printf "%s-%s" (include "matomo.fullname" .) "externaldb" -}}
 {{- end -}}
 {{- end -}}

@@ -122,9 +122,6 @@ spec:
           volumeMounts:
             - name: matomo-data
               mountPath: /bitnami/
-            {{- if .Values.extraVolumeMounts }}
-            {{- include "common.tplvalues.render" (dict "value" .Values.extraVolumeMounts "context" $) | nindent 12 }}
-            {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -141,7 +138,7 @@ spec:
         - name: matomo-data
           {{- if .Values.persistence.enabled }}
           persistentVolumeClaim:
-            claimName: {{ .Values.persistence.existingClaim | default (printf "%s-matomo" (include "common.names.fullname" .)) }}
+            claimName: {{ .Values.persistence.existingClaim | default (include "matomo.fullname" .) }}
           {{- else }}
           emptyDir: {}
           {{- end }}
